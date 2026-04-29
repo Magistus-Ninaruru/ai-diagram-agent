@@ -13,6 +13,7 @@ import {
   AlertCircle,
   PanelLeftOpen,
   SquarePen,
+  ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -527,6 +528,52 @@ export function ChatPanel({
 
         <Separator />
 
+        {/* Dual-agent pipeline visualization */}
+        {isLoading && (
+          <div className="flex items-center justify-center gap-2.5 px-3 py-2">
+            {/* Agent 1: Generator */}
+            <div
+              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-all duration-500 ${
+                status === "submitted"
+                  ? "border-blue-400/60 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-300 shadow-[0_0_12px_-3px_rgba(59,130,246,0.4)]"
+                  : "border-green-400/40 bg-green-50/50 dark:bg-green-500/5 text-green-600 dark:text-green-400"
+              }`}
+            >
+              {status === "submitted" ? (
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500" />
+                </span>
+              ) : (
+                <span className="inline-flex h-1.5 w-1.5 rounded-full bg-green-500" />
+              )}
+              Agent 1
+            </div>
+
+            {/* Arrow connector */}
+            <ArrowRight className="h-3 w-3 text-muted-foreground/40 shrink-0" />
+
+            {/* Agent 2: Optimizer */}
+            <div
+              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-all duration-500 ${
+                status === "streaming"
+                  ? "border-emerald-400/60 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 shadow-[0_0_12px_-3px_rgba(16,185,129,0.4)]"
+                  : "border-border text-muted-foreground/50"
+              }`}
+            >
+              {status === "streaming" ? (
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                </span>
+              ) : (
+                <span className="inline-flex h-1.5 w-1.5 rounded-full bg-muted-foreground/30" />
+              )}
+              Agent 2
+            </div>
+          </div>
+        )}
+
         {/* Input area */}
         <div className="p-3">
           {imagePreview && (
@@ -599,14 +646,17 @@ function MessageContent({ content }: { content: string }) {
     <div className="space-y-2">
       {(hasMermaid || hasDrawio) && (
         <div className="flex flex-wrap gap-1.5 mb-1">
+          <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 dark:bg-purple-900/30 px-2 py-0.5 text-[10px] font-medium text-purple-700 dark:text-purple-300">
+            Reviewed &amp; optimised
+          </span>
           {hasMermaid && (
             <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-300">
-              Mermaid updated
+              Mermaid ✓
             </span>
           )}
           {hasDrawio && (
             <span className="inline-flex items-center gap-1 rounded-full bg-green-100 dark:bg-green-900/30 px-2 py-0.5 text-[10px] font-medium text-green-700 dark:text-green-300">
-              Draw.io updated
+              Draw.io ✓
             </span>
           )}
         </div>
