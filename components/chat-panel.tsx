@@ -134,6 +134,7 @@ export function ChatPanel({
               model: s.selectedModel,
               baseUrl: provider?.baseUrl || "",
               apiKey: provider?.apiKey || "",
+              iconfontIcons: s.iconfontIcons || "",
             },
           };
         },

@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
 }
 
 // ---------------------------------------------------------------------------
@@ -78,8 +78,8 @@ model Conversation {
   userId      String
   title       String   @default("New Chat")
   messages    Json     @default("[]")
-  mermaidCode String   @default("") @db.Text
-  drawioXml   String   @default("") @db.Text
+  mermaidCode String   @db.Text
+  drawioXml   String   @db.Text
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -96,6 +96,8 @@ model UserSettings {
   selectedProvider String @default("openai")
   selectedModel    String @default("gpt-4o")
   drawioUrl        String @default("")
+  iconfontUrl      String @default("")
+  iconfontIcons    String @default("")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

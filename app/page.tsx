@@ -14,6 +14,8 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { type LLMSettings, DEFAULT_SETTINGS } from "@/lib/settings";
+import { IconfontLoader } from "@/components/iconfont-loader";
+import { IconBrowserDialog } from "@/components/icon-browser-dialog";
 
 export default function Home() {
   const { data: session } = useSession();
@@ -60,6 +62,9 @@ export default function Home() {
       {/* Noise overlay */}
       <div className="noise-overlay" />
 
+      {/* Dynamic iconfont.cn CSS loader */}
+      <IconfontLoader url={settings.iconfontUrl} />
+
       {/* Top bar */}
       <header className="glass-header relative z-10 flex items-center justify-between px-4 py-2">
         <div className="flex items-center gap-2">
@@ -98,6 +103,10 @@ export default function Home() {
             </div>
           )}
           <ThemeToggle />
+          <IconBrowserDialog
+            iconfontUrl={settings.iconfontUrl}
+            iconfontIcons={settings.iconfontIcons}
+          />
         </div>
       </header>
 

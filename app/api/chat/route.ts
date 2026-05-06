@@ -2,6 +2,7 @@ import { streamText, generateText, convertToModelMessages } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { buildAlicloudDrawioPrompt } from "@/lib/alibaba-cloud-shapes";
 
 export const runtime = "edge";
 export const maxDuration = 120; // Increased for dual-agent processing
@@ -20,6 +21,7 @@ Generate BOTH:
 
 Rules:
 - Mermaid: pick the best diagram type (flowchart, sequence, class, state, ER, gantt…). Use clear, descriptive node labels. Ensure valid syntax.
+- CRITICAL: In Mermaid, ALWAYS wrap node labels in double quotes when they contain ANY special characters such as parentheses (), slashes /, brackets [], braces {}, pipes |, angle brackets <>, commas, colons, semicolons, or non-ASCII characters (Chinese, Japanese, etc.). Example: A["数据湖构建\n(统一元数据)"] NOT A[数据湖构建\n(统一元数据)]
 - Draw.io: output valid mxGraphModel XML wrapped in <mxfile><diagram name="Page-1"><mxGraphModel><root>…</root></mxGraphModel></diagram></mxfile>. Use mxCell elements with proper geometry, styling, and spacing.
 - Both diagrams must represent the same concept accurately.
 - Focus on completeness and structural correctness.
@@ -48,6 +50,7 @@ Critical rules:
 - Mermaid syntax must be renderable by Mermaid.js v11+.
 - Draw.io XML must be valid and parseable by the draw.io engine.
 - Node IDs in Mermaid must not contain unquoted special characters.
+- CRITICAL: ALL Mermaid node labels that contain special characters (parentheses, slashes, brackets, braces, pipes, angle brackets, commas, colons, non-ASCII text, etc.) MUST be wrapped in double quotes. e.g. A["Label (detail)"] not A[Label (detail)]. Unquoted parentheses inside [] cause parse errors.
 - Preserve the original diagram's intent and structure from the user's request.`;
 
 /** Message sent to Agent 2 to trigger the review (shared-memory handoff). */
@@ -93,6 +96,53 @@ function getModel(provider: string, modelId: string, baseUrl: string, apiKey: st
 
 // ─── Route handler ──────────────────────────────────────────────────────────
 
+/** Build an iconfont prompt supplement when icons are available. */
+function buildIconPrompt(icons: string): { generator: string; optimizer: string } {
+  const list = icons
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (list.length === 0) return { generator: "", optimizer: "" };
+
+  const iconList = list.join(", ");
+
+  const generator = `\n\nICON FONT AVAILABLE (iconfont.cn) — MANDATORY:
+You have access to these iconfont CSS class names (the part after "icon-"): ${iconList}.
+
+You MUST use icons in Mermaid diagrams. For EVERY node, check if any icon name relates to the node's concept (e.g. icon name "oss" matches "对象存储 OSS", "database" matches database nodes, "server" matches server nodes). If a match exists, you MUST include the icon in that node's label.
+
+Mermaid HTML icon syntax (securityLevel is "loose", HTML is rendered):
+  A["<i class='iconfont icon-NAME' style='font-size:24px;color:#1890ff'></i><br/>Label Text"]
+
+CRITICAL: The icon class name after "icon-" must be EXACTLY as listed above. These are CSS class names, NOT display names.
+- If the list says "oss", use class='iconfont icon-oss' (CORRECT)
+- Do NOT translate or modify the name: class='iconfont icon-对象存储oss' (WRONG)
+- Do NOT add Chinese characters to the class name (WRONG)
+
+Example with multiple icons:
+  OSS["<i class='iconfont icon-oss' style='font-size:24px;color:#FF6A00'></i><br/>对象存储 OSS"]
+  DB["<i class='iconfont icon-database' style='font-size:24px;color:#1890ff'></i><br/>数据库"]
+  SRV["<i class='iconfont icon-server' style='font-size:24px;color:#52c41a'></i><br/>服务器"]
+
+Rules:
+- Match icon names to node concepts broadly (partial match is fine: "oss" for OSS, "cloud" for any cloud service, etc.).
+- Use ALL relevant icons from the list — do NOT leave matching icons unused.
+- The icon <i> tag MUST be inside the double-quoted label, followed by <br/> and the text label.
+- For draw.io diagrams, use descriptive shape styles from the built-in library instead (the icon font is not available in the draw.io iframe).`;
+
+  const optimizer = `\n\nICON FONT RULES — MANDATORY:
+Available iconfont CSS class names (after "icon-" prefix): ${iconList}.
+
+- PRESERVE all existing <i class='iconfont icon-xxx'> HTML in Mermaid node labels. Do NOT remove, escape, or strip them.
+- CHECK: if Agent 1 missed adding icons to nodes that match an available icon name, ADD the icon HTML to those nodes.
+- CRITICAL: The class name after "icon-" must be EXACTLY as listed above. Do NOT translate icon names to Chinese or any other language. Use the EXACT string from the list.
+- Icon HTML format: <i class='iconfont icon-NAME' style='font-size:24px;color:#HEX'></i><br/>Label
+- Ensure the HTML is well-formed and class names match the available icons.
+- For draw.io, do NOT attempt to use icon font classes; use native draw.io shapes instead.`;
+
+  return { generator, optimizer };
+}
+
 export async function POST(req: Request) {
   try {
     const {
@@ -101,9 +151,12 @@ export async function POST(req: Request) {
       model: modelId = "gpt-4o",
       baseUrl = "",
       apiKey = "",
+      iconfontIcons = "",
     } = await req.json();
 
     const model = getModel(provider, modelId, baseUrl, apiKey);
+    const iconPrompt = buildIconPrompt(iconfontIcons);
+    const alicloudPrompt = buildAlicloudDrawioPrompt();
 
     const trimmedMessages =
       messages.length > MAX_CONTEXT_MESSAGES
@@ -116,7 +169,7 @@ export async function POST(req: Request) {
     // Its full output is kept in memory (shared context for Agent 2).
     const agent1Result = await generateText({
       model,
-      system: GENERATOR_PROMPT,
+      system: GENERATOR_PROMPT + iconPrompt.generator + alicloudPrompt.generator,
       messages: modelMessages,
     });
 
@@ -149,7 +202,7 @@ export async function POST(req: Request) {
 
     const result = streamText({
       model,
-      system: OPTIMIZER_PROMPT,
+      system: OPTIMIZER_PROMPT + iconPrompt.optimizer + alicloudPrompt.optimizer,
       messages: agent2Messages,
     });
 

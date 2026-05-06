@@ -11,6 +11,8 @@ export interface LLMSettings {
   selectedProvider: string;
   selectedModel: string;
   drawioUrl: string; // Custom draw.io URL (empty = use defaults with fallback)
+  iconfontUrl: string; // iconfont.cn CSS CDN link, e.g. "//at.alicdn.com/t/c/font_xxx.css"
+  iconfontIcons: string; // Comma-separated icon names, e.g. "server,database,cloud"
 }
 
 export const DEFAULT_PROVIDERS: ProviderConfig[] = [
@@ -49,6 +51,8 @@ export const DEFAULT_SETTINGS: LLMSettings = {
   selectedProvider: "openai",
   selectedModel: "gpt-4o",
   drawioUrl: "",
+  iconfontUrl: "",
+  iconfontIcons: "",
 };
 
 export function getActiveProvider(settings: LLMSettings): ProviderConfig | undefined {

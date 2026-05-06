@@ -33,6 +33,8 @@ export async function GET() {
     selectedProvider: row.selectedProvider,
     selectedModel: row.selectedModel,
     drawioUrl: row.drawioUrl,
+    iconfontUrl: row.iconfontUrl,
+    iconfontIcons: row.iconfontIcons,
   });
 }
 
@@ -53,12 +55,16 @@ export async function PUT(req: Request) {
       selectedProvider: body.selectedProvider ?? "openai",
       selectedModel: body.selectedModel ?? "gpt-4o",
       drawioUrl: body.drawioUrl ?? "",
+      iconfontUrl: body.iconfontUrl ?? "",
+      iconfontIcons: body.iconfontIcons ?? "",
     },
     update: {
       providers: body.providers,
       selectedProvider: body.selectedProvider,
       selectedModel: body.selectedModel,
       drawioUrl: body.drawioUrl,
+      iconfontUrl: body.iconfontUrl,
+      iconfontIcons: body.iconfontIcons,
     },
   });
 

@@ -19,6 +19,12 @@ export function MermaidCanvas({ code }: MermaidCanvasProps) {
     if (!code || !containerRef.current) return;
 
     try {
+      // Wait for all fonts (including iconfont) to finish loading
+      // before rendering so <i class="iconfont"> glyphs are available.
+      if (document.fonts?.ready) {
+        await document.fonts.ready;
+      }
+
       // Dynamic import to avoid SSR issues
       const mermaid = (await import("mermaid")).default;
       mermaid.initialize({
@@ -26,6 +32,7 @@ export function MermaidCanvas({ code }: MermaidCanvasProps) {
         theme: "default",
         securityLevel: "loose",
         fontFamily: "var(--font-geist-sans), sans-serif",
+        flowchart: { htmlLabels: true },
       });
 
       const id = `mermaid-${++renderIdRef.current}`;
@@ -51,6 +58,14 @@ export function MermaidCanvas({ code }: MermaidCanvasProps) {
     const timer = setTimeout(renderDiagram, 300);
     return () => clearTimeout(timer);
   }, [renderDiagram]);
+
+  // Re-render when new fonts load (e.g. iconfont CSS finishes downloading font file)
+  useEffect(() => {
+    if (!code || typeof document === "undefined" || !document.fonts) return;
+    const onLoadingDone = () => renderDiagram();
+    document.fonts.addEventListener("loadingdone", onLoadingDone);
+    return () => document.fonts.removeEventListener("loadingdone", onLoadingDone);
+  }, [code, renderDiagram]);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(code);

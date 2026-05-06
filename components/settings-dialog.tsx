@@ -363,6 +363,52 @@ export function SettingsDialog({ settings, onSave }: SettingsDialogProps) {
             </p>
           </div>
 
+          <Separator />
+
+          {/* Iconfont.cn */}
+          <div className="space-y-3">
+            <Label>Iconfont.cn Icons</Label>
+            <div className="space-y-2">
+              <Input
+                value={draft.iconfontUrl}
+                onChange={(e) =>
+                  setDraft((prev) => ({ ...prev, iconfontUrl: e.target.value }))
+                }
+                placeholder="//at.alicdn.com/t/c/font_xxx.css"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Font-class CSS link from your{" "}
+                <a
+                  href="https://www.iconfont.cn"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  iconfont.cn
+                </a>{" "}
+                project. Find it under &quot;Font class&quot; tab.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <textarea
+                className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={draft.iconfontIcons}
+                onChange={(e) =>
+                  setDraft((prev) => ({ ...prev, iconfontIcons: e.target.value }))
+                }
+                placeholder="server, database, cloud, user, network, settings, lock, search"
+                rows={2}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Comma-separated <strong>CSS class names</strong> from your iconfont project (the part after{" "}
+                <code className="bg-muted px-1 rounded">icon-</code>).
+                Use the exact name shown in the Font class tab, e.g.{" "}
+                <code className="bg-muted px-1 rounded">oss</code> not{" "}
+                <code className="bg-muted px-1 rounded line-through">对象存储oss</code>.
+              </p>
+            </div>
+          </div>
+
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setOpen(false)}>
               Cancel
