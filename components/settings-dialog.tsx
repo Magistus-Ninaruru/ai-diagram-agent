@@ -36,6 +36,11 @@ export function SettingsDialog({ settings, onSave }: SettingsDialogProps) {
     "idle" | "testing" | "success" | "error"
   >("idle");
   const [testError, setTestError] = useState("");
+  const [iconfontTestStatus, setIconfontTestStatus] = useState<
+    "idle" | "testing" | "success" | "error"
+  >("idle");
+  const [iconfontTestError, setIconfontTestError] = useState("");
+  const [iconfontTestDetail, setIconfontTestDetail] = useState("");
 
   const handleOpen = (o: boolean) => {
     if (o) setDraft(structuredClone(settings));
@@ -123,6 +128,46 @@ export function SettingsDialog({ settings, onSave }: SettingsDialogProps) {
       }));
     }
   };
+
+  const handleTestIconfont = useCallback(async () => {
+    if (!draft.iconfontUrl) {
+      setIconfontTestStatus("error");
+      setIconfontTestError("Enter a CSS URL first");
+      return;
+    }
+    if (!draft.iconfontIcons || draft.iconfontIcons.trim().length === 0) {
+      setIconfontTestStatus("error");
+      setIconfontTestError("Enter at least one icon name");
+      return;
+    }
+    setIconfontTestStatus("testing");
+    setIconfontTestError("");
+    setIconfontTestDetail("");
+    try {
+      const res = await fetch("/api/test-iconfont", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: draft.iconfontUrl,
+          icons: draft.iconfontIcons,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIconfontTestStatus("success");
+        setIconfontTestDetail(`All ${data.found} icon(s) found`);
+      } else {
+        setIconfontTestStatus("error");
+        setIconfontTestError(data.error || "Verification failed");
+        if (data.found !== undefined) {
+          setIconfontTestDetail(`${data.found}/${data.total} icons matched`);
+        }
+      }
+    } catch {
+      setIconfontTestStatus("error");
+      setIconfontTestError("Network error");
+    }
+  }, [draft.iconfontUrl, draft.iconfontIcons]);
 
   const handleSave = () => {
     onSave(draft);
@@ -371,9 +416,10 @@ export function SettingsDialog({ settings, onSave }: SettingsDialogProps) {
             <div className="space-y-2">
               <Input
                 value={draft.iconfontUrl}
-                onChange={(e) =>
-                  setDraft((prev) => ({ ...prev, iconfontUrl: e.target.value }))
-                }
+                onChange={(e) => {
+                  setDraft((prev) => ({ ...prev, iconfontUrl: e.target.value }));
+                  setIconfontTestStatus("idle");
+                }}
                 placeholder="//at.alicdn.com/t/c/font_xxx.css"
               />
               <p className="text-[11px] text-muted-foreground">
@@ -393,9 +439,10 @@ export function SettingsDialog({ settings, onSave }: SettingsDialogProps) {
               <textarea
                 className="flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 value={draft.iconfontIcons}
-                onChange={(e) =>
-                  setDraft((prev) => ({ ...prev, iconfontIcons: e.target.value }))
-                }
+                onChange={(e) => {
+                  setDraft((prev) => ({ ...prev, iconfontIcons: e.target.value }));
+                  setIconfontTestStatus("idle");
+                }}
                 placeholder="server, database, cloud, user, network, settings, lock, search"
                 rows={2}
               />
@@ -405,6 +452,46 @@ export function SettingsDialog({ settings, onSave }: SettingsDialogProps) {
                 Use the exact name shown in the Font class tab, e.g.{" "}
                 <code className="bg-muted px-1 rounded">oss</code> not{" "}
                 <code className="bg-muted px-1 rounded line-through">对象存储oss</code>.
+              </p>
+            </div>
+
+            {/* Test Iconfont Connection */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={iconfontTestStatus === "testing"}
+                  onClick={handleTestIconfont}
+                  className="gap-1.5"
+                >
+                  {iconfontTestStatus === "testing" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Zap className="h-3.5 w-3.5" />
+                  )}
+                  {iconfontTestStatus === "testing" ? "Verifying..." : "Verify Icons"}
+                </Button>
+                {iconfontTestStatus === "success" && (
+                  <span className="flex items-center gap-1 text-xs text-green-600">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    {iconfontTestDetail}
+                  </span>
+                )}
+                {iconfontTestStatus === "error" && (
+                  <span className="flex items-center gap-1 text-xs text-destructive">
+                    <XCircle className="h-3.5 w-3.5" />
+                    {iconfontTestError}
+                  </span>
+                )}
+              </div>
+              {iconfontTestStatus === "error" && iconfontTestDetail && (
+                <p className="text-[11px] text-muted-foreground">
+                  {iconfontTestDetail}
+                </p>
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                Verify that all icon names exist in your iconfont.cn project.
               </p>
             </div>
           </div>
